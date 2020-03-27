@@ -5,6 +5,8 @@ Created on Wed Mar 25 17:10:29 2020
 @author: bhatt
 """
 
+import pandas as pd
+
 class StockRow:
     def __init__(self, transactionDate, highPrice, lowPrice, openPrice, closePrice, volume, adjClosePrice):
         self.TransactionDate = transactionDate
@@ -19,6 +21,20 @@ class Stock:
     # Data will contain StockRows in TransactionDate order
     def __init__(self):
         self.Data = []
+        
+    def InsertPandasDataFrame(self, df):
+        for i in range(len(df)):
+            transactionDate = pd.to_datetime(df['High'].index[i])
+            highPrice = df['High'][i]
+            lowPrice = df['Low'][i]
+            openPrice = df['Open'][i]
+            closePrice = df['Close'][i]
+            volume = df['Volume'][i]
+            adjClosePrice = df['Adj Close'][i]
+            
+            stockRow = StockRow(transactionDate, highPrice, lowPrice, openPrice, closePrice, volume, adjClosePrice)
+            self.AddStockRow(stockRow)
+        
         
     # Use to add data, each row of data must be later than all previous rows
     # This ensures that the data is always in date order
@@ -118,15 +134,15 @@ class StrategyA(StockStrategy):
     def __init__(self, stockSimulator):
         super().__init__(stockSimulator)
         
-    def Execute(self):
+    def Execute(self, alpha = 0.5):
         ss = self.StockSimulator
-        curveY = self.GetExponentialMeanAverageData()[1]
+        y = self.GetExponentialMeanAverageData(alpha)[1]
         while(not ss.IsLastTradingDay()):
             ss.GoToNextDay()
-            if(curveY[ss.CurrentDayIndex] > curveY[ss.CurrentDayIndex - 1] and curveY[ss.CurrentDayIndex - 2] > curveY[ss.CurrentDayIndex - 1]):
+            if(y[ss.CurrentDayIndex] > y[ss.CurrentDayIndex - 1] and y[ss.CurrentDayIndex - 2] > y[ss.CurrentDayIndex - 1]):
                 print('Purchased one (1) stock for ', ss.CurrentStockRow.Close, ' on ', ss.CurrentDay)
                 ss.PurchaseStock()
-            elif(curveY[ss.CurrentDayIndex] < curveY[ss.CurrentDayIndex - 1] and curveY[ss.CurrentDayIndex - 2] < curveY[ss.CurrentDayIndex - 1]):
+            elif(y[ss.CurrentDayIndex] < y[ss.CurrentDayIndex - 1] and y[ss.CurrentDayIndex - 2] < y[ss.CurrentDayIndex - 1]):
                 willSell = True
                 for elem in ss.PurchasedStocks:
                     if elem > ss.CurrentStockRow.Close:
@@ -145,6 +161,7 @@ class StrategyA(StockStrategy):
             
         print('Spent ', moneySpent, ' and made ', moneyMade)
         print('Total revenue was ', moneyMade - moneySpent)
+        print('Total profit percentage was ', moneyMade/moneySpent)
         
     def GetExponentialMeanAverageData(self, alpha = 0.5):
         stockData = self.StockSimulator.Stock.Data

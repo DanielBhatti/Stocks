@@ -34,17 +34,7 @@ if(__name__ == "__main__"):
     df = web.DataReader("SPY", 'yahoo', start, end)
     
     stock = StockAnalysis.Stock()
-    for i in range(len(df)):
-        transactionDate = pd.to_datetime(df['High'].index[i])
-        highPrice = df['High'][i]
-        lowPrice = df['Low'][i]
-        openPrice = df['Open'][i]
-        closePrice = df['Close'][i]
-        volume = df['Volume'][i]
-        adjClosePrice = df['Adj Close'][i]
-        
-        stockRow = StockAnalysis.StockRow(transactionDate, highPrice, lowPrice, openPrice, closePrice, volume, adjClosePrice)
-        stock.AddStockRow(stockRow)
+    stock.InsertPandasDataFrame(df)
     
     x = []
     y = []
@@ -54,8 +44,11 @@ if(__name__ == "__main__"):
         x.append(currentRow.TransactionDate)
         y.append(currentRow.Close)
         
+    alpha = 0.01
     stockSimulator = StockAnalysis.StockSimulator(stock)
     sA = StockAnalysis.StrategyA(stockSimulator)
-    sA.Execute()
+    sA.Execute(alpha)
+    curveX, curveY = sA.GetExponentialMeanAverageData(alpha)
         
     plt.plot_date(x, y, fmt = '.', xdate = True)
+    plt.plot_date(curveX, curveY, fmt = '-', xdate = True)
